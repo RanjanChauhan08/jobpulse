@@ -1,0 +1,255 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>JobPulse - Job Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{% static 'jobs/style.css' %}">
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <header class="header">
+
+        <div class="container nav">
+
+            <a href="{% url 'job_list' %}" class="logo">
+                Job<span>Pulse</span>
+            </a>
+
+            <div class="source">
+                Source: Jobicy
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <main class="container">
+
+        <!-- HERO -->
+        <section class="hero">
+
+            <p class="eyebrow">
+                JOB INGESTION DEMO
+            </p>
+
+            <h1>
+                Find your next
+                <span>opportunity.</span>
+            </h1>
+
+            <p class="subtitle">
+                JobPulse collects and organizes real job listings
+                through a reliable ingestion pipeline built with
+                Python and Django.
+            </p>
+
+
+            <!-- SEARCH -->
+            <form method="GET" class="search-form">
+
+                <input
+                    type="text"
+                    name="search"
+                    value="{{ search }}"
+                    placeholder="Search jobs, companies or locations..."
+                >
+
+                <button type="submit">
+                    Search
+                </button>
+
+            </form>
+
+
+            <!-- REFRESH JOBS -->
+            <form
+                method="POST"
+                action="{% url 'refresh_jobs' %}"
+            >
+
+                {% csrf_token %}
+
+                <button
+                    class="refresh"
+                    type="submit"
+                >
+                    ↻ Fetch Latest Jobs
+                </button>
+
+            </form>
+
+        </section>
+
+
+        <!-- MESSAGES -->
+        {% if messages %}
+
+            {% for message in messages %}
+
+                <div class="message">
+                    {{ message }}
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+
+
+        <!-- JOB SECTION -->
+        <section class="jobs-section">
+
+            <div class="section-header">
+
+                <div>
+
+                    <p class="eyebrow">
+                        LIVE DATA
+                    </p>
+
+                    <h2>
+                        Latest Opportunities
+                    </h2>
+
+                </div>
+
+                <span class="count">
+                    {{ jobs|length }} jobs
+                </span>
+
+            </div>
+
+
+            <!-- JOB CARDS -->
+            <div class="job-grid">
+
+                {% for job in jobs %}
+
+                    <article class="job-card">
+
+                        <div class="job-top">
+
+                            <span class="job-type">
+                                {{ job.job_type|default:"Job" }}
+                            </span>
+
+                            <span class="source-tag">
+                                {{ job.source }}
+                            </span>
+
+                        </div>
+
+
+                        <h3>
+                            {{ job.title }}
+                        </h3>
+
+
+                        <p class="company">
+                            {{ job.company }}
+                        </p>
+
+
+                        <div class="details">
+
+                            <span>
+                                📍
+                                {{ job.location|default:"Remote" }}
+                            </span>
+
+                            {% if job.category %}
+
+                                <span>
+                                    ◈ {{ job.category }}
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        {% if job.salary %}
+
+                            <p class="salary">
+                                Salary: {{ job.salary }}
+                            </p>
+
+                        {% endif %}
+
+
+                        <div class="job-footer">
+
+                            <span>
+                                Jobicy
+                            </span>
+
+                            <a
+                                href="{{ job.source_url }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                View Original →
+                            </a>
+
+                        </div>
+
+                    </article>
+
+
+                {% empty %}
+
+                    <div class="empty">
+
+                        <h3>
+                            No jobs found.
+                        </h3>
+
+                        <p>
+                            Try another search or fetch the latest jobs.
+                        </p>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- FOOTER -->
+    <footer>
+
+        <div class="container">
+
+            <p>
+                JobPulse · Job data provided by
+                <a
+                    href="https://jobicy.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    Jobicy
+                </a>
+            </p>
+
+        </div>
+
+    </footer>
+
+</body>
+
+</html>
