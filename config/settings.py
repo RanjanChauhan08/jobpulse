@@ -21,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 # ---------------------------------------------------------
 
-# On Render, SECRET_KEY will come from environment variables.
+# On Render, SECRET_KEY comes from environment variables.
 # Locally, the fallback key allows the project to run.
 SECRET_KEY = os.environ.get(
     "SECRET_KEY",
@@ -29,49 +29,78 @@ SECRET_KEY = os.environ.get(
 )
 
 
+# ---------------------------------------------------------
 # DEBUG
-#
+# ---------------------------------------------------------
+
 # Locally:
 #     DEBUG=True
 #
 # On Render:
 #     DEBUG=False
-#
+
 DEBUG = os.environ.get(
     "DEBUG",
-    "False"
+    "True"
 ).lower() == "true"
 
 
-# Comma-separated hosts, for example:
-# ALLOWED_HOSTS=jobpulse.onrender.com,www.example.com
-# Keep the wildcard only for local development.
+# ---------------------------------------------------------
+# ALLOWED HOSTS
+# ---------------------------------------------------------
+
+# Render:
+#     ALLOWED_HOSTS=your-app-name.onrender.com
+#
+# Local:
+#     localhost and 127.0.0.1 are automatically allowed
+#     when DEBUG=True.
+
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.environ.get("ALLOWED_HOSTS", "").split(",")
     if host.strip()
 ]
-if DEBUG:
-    ALLOWED_HOSTS.extend(["localhost", "127.0.0.1"])
-else:
-    # Vercel assigns both production and preview deployments under this domain.
-    # A leading dot permits all subdomains, such as jobpulse.vercel.app.
-    ALLOWED_HOSTS.append(".vercel.app")
 
-# Render terminates HTTPS before forwarding the request to Gunicorn.  These
-# settings ensure Django recognises the original request as secure and accepts
-# POST requests from the configured public site URLs.
+if DEBUG:
+    ALLOWED_HOSTS.extend([
+        "localhost",
+        "127.0.0.1",
+    ])
+
+
+# ---------------------------------------------------------
+# SECURITY / HTTPS
+# ---------------------------------------------------------
+
+# Render terminates HTTPS before forwarding the request
+# to Gunicorn.
+
 if not DEBUG:
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+    SECURE_PROXY_SSL_HEADER = (
+        "HTTP_X_FORWARDED_PROTO",
+        "https",
+    )
+
     SECURE_SSL_REDIRECT = True
+
     SESSION_COOKIE_SECURE = True
+
     CSRF_COOKIE_SECURE = True
+
     SECURE_HSTS_SECONDS = 31_536_000
+
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
     SECURE_HSTS_PRELOAD = True
+
     CSRF_TRUSTED_ORIGINS = [
         origin.strip()
-        for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+        for origin in os.environ.get(
+            "CSRF_TRUSTED_ORIGINS",
+            ""
+        ).split(",")
         if origin.strip()
     ]
 
@@ -103,8 +132,7 @@ MIDDLEWARE = [
 
     "django.middleware.security.SecurityMiddleware",
 
-    # WhiteNoise allows Django to serve static files
-    # such as CSS in production.
+    # WhiteNoise serves static files in production.
     "whitenoise.middleware.WhiteNoiseMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -172,15 +200,10 @@ WSGI_APPLICATION = "config.wsgi.application"
 # ---------------------------------------------------------
 
 # Local development:
-#
 #     SQLite
 #
 # Render:
-#
 #     PostgreSQL through DATABASE_URL
-#
-# This means we don't need different settings files
-# for local and production environments.
 
 DATABASES = {
 
@@ -241,28 +264,35 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 
-# WhiteNoise can serve the generated static files directly from the web
-# process. This avoids depending on a separate static-file server on Render.
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-
-# Directory where collectstatic will put
+# Directory where collectstatic puts
 # production-ready static files.
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
-# Directory containing our manually created
+# Directory containing manually created
 # CSS / JS / images.
 
 STATICFILES_DIRS = [
-
     BASE_DIR / "static",
-
 ]
 
 
-# WhiteNoise compressed static-file storage.
+# ---------------------------------------------------------
+# WHITE NOISE / STATIC FILE STORAGE
+# ---------------------------------------------------------
+
+# IMPORTANT:
+#
+# Do NOT define STATICFILES_STORAGE here.
+#
+# Modern Django uses STORAGES instead.
+#
+# Having both STATICFILES_STORAGE and STORAGES
+# causes:
+#
+# ImproperlyConfigured:
+# STATICFILES_STORAGE/STORAGES are mutually exclusive.
 
 STORAGES = {
 

@@ -2,7 +2,6 @@ import time
 import requests
 
 from django.utils.dateparse import parse_datetime
-from django.utils import timezone
 
 from jobs.models import Job
 
@@ -17,7 +16,6 @@ def fetch_jobs():
     for attempt in range(max_attempts):
 
         try:
-
             response = requests.get(
                 API_URL,
                 params={
@@ -27,12 +25,10 @@ def fetch_jobs():
                 timeout=10,
             )
 
+            # Handle rate limiting
             if response.status_code == 429:
-
                 wait_time = 2 ** attempt
-
                 time.sleep(wait_time)
-
                 continue
 
             response.raise_for_status()
@@ -45,6 +41,7 @@ def fetch_jobs():
 
             for item in jobs:
 
+                # Get unique job ID
                 external_id = (
                     item.get("id")
                     or item.get("url")
@@ -53,23 +50,56 @@ def fetch_jobs():
                 if not external_id:
                     continue
 
+                # Parse published date
                 published_at = None
 
-                published_value = item.get(
-                    "pubDate"
-                )
+                published_value = item.get("pubDate")
 
                 if published_value:
-
                     published_at = parse_datetime(
                         published_value
                     )
+
+                # -------------------------
+                # Salary handling
+                # -------------------------
+
+                salary_min = item.get("salaryMin")
+                salary_max = item.get("salaryMax")
+                salary_currency = item.get(
+                    "salaryCurrency",
+                    ""
+                )
+
+                if salary_min and salary_max:
+                    salary = (
+                        f"{salary_min} - "
+                        f"{salary_max} "
+                        f"{salary_currency}"
+                    ).strip()
+                elif salary_min:
+                    salary = (
+                        f"{salary_min} "
+                        f"{salary_currency}"
+                    ).strip()
+                elif salary_max:
+                    salary = (
+                        f"{salary_max} "
+                        f"{salary_currency}"
+                    ).strip()
+                else:
+                    salary = "Not disclosed"
+
+                # -------------------------
+                # Save / update job
+                # -------------------------
 
                 Job.objects.update_or_create(
 
                     external_id=external_id,
 
                     defaults={
+
                         "title": item.get(
                             "jobTitle",
                             "Untitled job"
@@ -85,20 +115,15 @@ def fetch_jobs():
                             ""
                         ),
 
-                        "job_type": item.get(
-                            "jobType",
-                            ""
+                        "job_type": ", ".join(
+                            item.get("jobType", [])
                         ),
 
-                        "category": item.get(
-                            "jobIndustry",
-                            ""
+                        "category": ", ".join(
+                            item.get("jobIndustry", [])
                         ),
 
-                        "salary": item.get(
-                            "annualSalaryMin",
-                            ""
-                        ),
+                        "salary": salary,
 
                         "description": item.get(
                             "jobDescription",
